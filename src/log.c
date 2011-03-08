@@ -378,41 +378,43 @@ void put_log(uin_t uin, const char *format, ...)
 	else
 		strlcpy(path, lp, sizeof(path));
 	
-	char dbpath[80] ="";
-	sprintf(dbpath, "%s/%d.db", path, uin);
-	sqlite3 *db;
-	int rc;
-	char *zErrMsg = NULL;
-	rc = sqlite3_open(dbpath, &db);
-	if( rc ){
-		gg_debug(GG_DEBUG_MISC, "SOCEK: Can't open database'%s': %s\n", dbpath, sqlite3_errmsg(db));
-		sqlite3_close(db);
-	} else {
-		rc = sqlite3_exec(db, "create table msg (id INTEGER PRIMARY KEY, type char[10], name char[100], ip char[16], INTEGER timestamp, status char[10], data text);", sqlcallback, 0, &zErrMsg);
-		if( rc!=SQLITE_OK ){
-			gg_debug(GG_DEBUG_MISC, "SQL error(%s): %s\n", dbpath, zErrMsg);
-			sqlite3_free(zErrMsg);
-		}
-		//Tutaj nie potrzeba sprawdzania, czy operacja siê uda³a. Je¶li siê nie uda³a, to najpewniej tabela ju¿ istnieje.
-		char query[1000];
-		
-		if( argumenty[0] == "status") {
-			char * tmp = "";
-			if( argumenty[5] != NULL) {
-				tmp = argumenty[5];
+	if( config_log & 8 ) {
+		char dbpath[80] ="";
+		sprintf(dbpath, "%s/%d.db", path, uin);
+		sqlite3 *db;
+		int rc;
+		char *zErrMsg = NULL;
+		rc = sqlite3_open(dbpath, &db);
+		if( rc ){
+			gg_debug(GG_DEBUG_MISC, "SOCEK: Can't open database'%s': %s\n", dbpath, sqlite3_errmsg(db));
+			sqlite3_close(db);
+		} else {
+			rc = sqlite3_exec(db, "create table msg (id INTEGER PRIMARY KEY, type char[10], name char[100], ip char[16], INTEGER timestamp, status char[10], data text);", sqlcallback, 0, &zErrMsg);
+			if( rc!=SQLITE_OK ){
+				gg_debug(GG_DEBUG_MISC, "SQL error(%s): %s\n", dbpath, zErrMsg);
+				sqlite3_free(zErrMsg);
 			}
-			sprintf( query, "insert into msg values(NULL,'%s','%s', '%s', %s, '%s', '%s');", argumenty[0], argumenty[1], argumenty[2], argumenty[3], argumenty[4], tmp );
-		} else if( argumenty[0] == "chatsend" || argumenty[0] == "msgsend" ) {
-			sprintf( query, "insert into msg values(NULL,'%s','%s',  NULL, %s, NULL, '%s');", argumenty[0], argumenty[1], argumenty[2], argumenty[3] );
-		} else if( argumenty[0] == "chatrecv" || argumenty[0] == "msgrecv" ) {
-			sprintf( query, "insert into msg values(NULL,'%s','%s',  NULL, %s, NULL, '%s');", argumenty[0], argumenty[1], argumenty[2], argumenty[4] );
+			//Tutaj nie potrzeba sprawdzania, czy operacja siê uda³a. Je¶li siê nie uda³a, to najpewniej tabela ju¿ istnieje.
+			char query[1000];
+			
+			if( argumenty[0] == "status") {
+				char * tmp = "";
+				if( argumenty[5] != NULL) {
+					tmp = argumenty[5];
+				}
+				sprintf( query, "insert into msg values(NULL,'%s','%s', '%s', %s, '%s', '%s');", argumenty[0], argumenty[1], argumenty[2], argumenty[3], argumenty[4], log_escape(tmp) );
+			} else if( argumenty[0] == "chatsend" || argumenty[0] == "msgsend" ) {
+				sprintf( query, "insert into msg values(NULL,'%s','%s',  NULL, %s, NULL, '%s');", argumenty[0], argumenty[1], argumenty[2], log_escape(argumenty[3]) );
+			} else if( argumenty[0] == "chatrecv" || argumenty[0] == "msgrecv" ) {
+				sprintf( query, "insert into msg values(NULL,'%s','%s',  NULL, %s, NULL, '%s');", argumenty[0], argumenty[1], argumenty[2], log_escape(argumenty[4]) );
+			}
+			sqlite3_exec(db, query, NULL, 0, &zErrMsg);
+			if( rc!=SQLITE_OK ){
+				gg_debug(GG_DEBUG_MISC, "SQL error(%s): %s\n", dbpath, zErrMsg);
+				sqlite3_free(zErrMsg);
+			}
+			sqlite3_close(db);
 		}
-		sqlite3_exec(db, query, NULL, 0, &zErrMsg);
-		if( rc!=SQLITE_OK ){
-			gg_debug(GG_DEBUG_MISC, "SQL error(%s): %s\n", dbpath, zErrMsg);
-			sqlite3_free(zErrMsg);
-		}
-		sqlite3_close(db);
 	}
 
 	if ((config_log & 2)) {
