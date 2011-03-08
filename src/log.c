@@ -51,6 +51,8 @@
 #  define PATH_MAX _POSIX_PATH_MAX
 #endif
 
+#include <sqlite3.h>
+
 list_t lasts = NULL;
 
 int config_last_size = 10;
@@ -252,6 +254,14 @@ static char *log_escape(const char *str)
 	return res;
 }
 
+static int sqlcallback(void *NotUsed, int argc, char **argv, char **azColName){
+  int i;
+  for(i=0; i<argc; i++){
+    gg_debug(GG_DEBUG_MISC, "SQL: %s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+  }
+  return 0;
+}
+
 /*
  * put_log()
  *
@@ -270,12 +280,22 @@ void put_log(uin_t uin, const char *format, ...)
 	size_t size = 0;
 	va_list ap;
 	FILE *f;
+	
+	char *argumenty[10];
+	//Nowy blok, aby nie zostawiaæ zmiennej loop samopas
+	{
+		int loop = 0;
+		for(; loop < 10; loop++) {
+			argumenty[loop] = NULL;
+		}
+	}
 
 	if (!config_log)
 		return;
 
 	/* oblicz d³ugo¶æ tekstu */
 	va_start(ap, format);
+	int element = 0;
 	for (p = format; *p; p++) {
 		int long_int = 0;
 
@@ -293,6 +313,7 @@ void put_log(uin_t uin, const char *format, ...)
 			
 			if (*p == 's') {
 				char *e, *tmp = va_arg(ap, char*);
+				argumenty[element++] = tmp;
 
 				e = log_escape(tmp);
 				size += strlen(e);
@@ -356,6 +377,43 @@ void put_log(uin_t uin, const char *format, ...)
 		snprintf(path, sizeof(path), "%s%s", home_dir, lp + 1);
 	else
 		strlcpy(path, lp, sizeof(path));
+	
+	char dbpath[80] ="";
+	sprintf(dbpath, "%s/%d.db", path, uin);
+	sqlite3 *db;
+	int rc;
+	char *zErrMsg = NULL;
+	rc = sqlite3_open(dbpath, &db);
+	if( rc ){
+		gg_debug(GG_DEBUG_MISC, "SOCEK: Can't open database'%s': %s\n", dbpath, sqlite3_errmsg(db));
+		sqlite3_close(db);
+	} else {
+		rc = sqlite3_exec(db, "create table msg (id INTEGER PRIMARY KEY, type char[10], name char[100], ip char[16], INTEGER timestamp, status char[10], data text);", sqlcallback, 0, &zErrMsg);
+		if( rc!=SQLITE_OK ){
+			gg_debug(GG_DEBUG_MISC, "SQL error(%s): %s\n", dbpath, zErrMsg);
+			sqlite3_free(zErrMsg);
+		}
+		//Tutaj nie potrzeba sprawdzania, czy operacja siê uda³a. Je¶li siê nie uda³a, to najpewniej tabela ju¿ istnieje.
+		char query[1000];
+		
+		if( argumenty[0] == "status") {
+			char * tmp = "";
+			if( argumenty[5] != NULL) {
+				tmp = argumenty[5];
+			}
+			sprintf( query, "insert into msg values(NULL,'%s','%s', '%s', %s, '%s', '%s');", argumenty[0], argumenty[1], argumenty[2], argumenty[3], argumenty[4], tmp );
+		} else if( argumenty[0] == "chatsend" || argumenty[0] == "msgsend" ) {
+			sprintf( query, "insert into msg values(NULL,'%s','%s',  NULL, %s, NULL, '%s');", argumenty[0], argumenty[1], argumenty[2], argumenty[3] );
+		} else if( argumenty[0] == "chatrecv" || argumenty[0] == "msgrecv" ) {
+			sprintf( query, "insert into msg values(NULL,'%s','%s',  NULL, %s, NULL, '%s');", argumenty[0], argumenty[1], argumenty[2], argumenty[4] );
+		}
+		sqlite3_exec(db, query, NULL, 0, &zErrMsg);
+		if( rc!=SQLITE_OK ){
+			gg_debug(GG_DEBUG_MISC, "SQL error(%s): %s\n", dbpath, zErrMsg);
+			sqlite3_free(zErrMsg);
+		}
+		sqlite3_close(db);
+	}
 
 	if ((config_log & 2)) {
 		if (mkdir(path, 0700) && errno != EEXIST)
