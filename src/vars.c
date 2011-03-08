@@ -267,7 +267,7 @@ void variable_init()
 	variable_add("last", "la", VAR_MAP, 1, &config_last, NULL, variable_map(4, 0, 0, "none", 1, 2, "all", 2, 1, "separate", 4, 0, "sent"), NULL);
 	variable_add("last_size", "ls", VAR_INT, 1, &config_last_size, NULL, NULL, NULL);
 	variable_add("local_ip", "ld", VAR_STR, 1, &config_local_ip, changed_local_ip, NULL, NULL);
-	variable_add("log", "lo", VAR_MAP, 1, &config_log, NULL, variable_map(4, 0, 0, "none", 1, 2, "file", 2, 1, "dir", 4, 0, "gzip"), NULL);
+	variable_add("log", "lo", VAR_MAP, 1, &config_log, NULL, variable_map(5, 0, 0, "none", 1, 2, "file", 2, 1, "dir", 4, 0, "gzip", 8, 0, "sql"), NULL);
 	variable_add("log_ignored", "li", VAR_INT, 1, &config_log_ignored, NULL, NULL, dd_log);
 	variable_add("log_status", "lS", VAR_INT, 1, &config_log_status, NULL, variable_map(3, 0, 0, "no", 1, 2, "yes", 2, 1, "descr"), dd_log);
 	variable_add("log_path", "lp", VAR_STR, 1, &config_log_path, NULL, NULL, dd_log);
