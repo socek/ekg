@@ -341,7 +341,7 @@ void put_log(uin_t uin, const char *format, ...)
 		char *zErrMsg = NULL;
 		rc = sqlite3_open(dbpath, &db);
 		if( rc ){
-			gg_debug(GG_DEBUG_MISC, "SOCEK: Can't open database'%s': %s\n", dbpath, sqlite3_errmsg(db));
+			gg_debug(GG_DEBUG_MISC, "SQL: Can't open database'%s': %s\n", dbpath, sqlite3_errmsg(db));
 			sqlite3_close(db);
 		} else {
 			rc = sqlite3_exec(db, "create table if not exists msg ( \
