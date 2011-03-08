@@ -614,8 +614,9 @@ log
 	,,log_path'', a nazwa pliku bêdzie numerem rozmówcy. je¶li mamy
 	wkompilowan± obs³ugê skompresowanych logów, dodanie warto¶ci 4
 	wymusi kompresjê logów. nie bêdzie ona dzia³a³a, je¶li istnieje
-	ju¿ nieskompresowany log. nale¿y go wcze¶niej skompresowaæ
-	poleceniem gzip. wszystkie dostêpne warto¶ci to: 0, 1, 2, 5, 6.
+	ju¿ nieskompresowany log. nale¿y go wcze¶niej skompresowaæ.
+    Warto¶æ 8 oznacza zapis do plików sqlite.
+	poleceniem gzip. wszystkie dostêpne warto¶ci to: 0, 1, 2, 5, 6, 8.
 
 log_ignored
 	typ: liczba
