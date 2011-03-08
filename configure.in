@@ -154,6 +154,13 @@ dnl  execinfo
 AC_CHECK_HEADERS(execinfo.h)
 AC_CHECK_FUNCS(backtrace)
 
+dnl  sqlite
+AC_CHECK_LIB(sqlite3, connect, IS_SQLITE="yes")
+if test "$IS_SQLITE" == "yes" ; then
+    LIBS="$LIBS -lsqlite3"
+    AC_DEFINE(WITH_SQLITE3, 1, [define if You want sqlite3])
+fi
+
 dnl  libgadu
 AC_CHECK_LIB(gadu, gg_login, LIBS="$LIBS -lgadu", 
 	AC_MSG_ERROR([You have to install libgadu. Please see docs/libgadu.txt])
@@ -528,6 +535,12 @@ if test "x$enable_aspell" = "xyes"; then
 	fi
 else
 	echo " - aspell: disabled"
+fi
+
+if test "$IS_SQLITE" == "yes" ; then
+    echo " - sqlite3: enabled"
+else 
+    echo " - sqlite3: disabled"
 fi
 
 echo
