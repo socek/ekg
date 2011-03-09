@@ -50,8 +50,9 @@
 #ifndef PATH_MAX
 #  define PATH_MAX _POSIX_PATH_MAX
 #endif
-
-#include <sqlite3.h>
+#ifdef ENABLED_SQLITE3
+#	include <sqlite3.h>
+#endif
 
 list_t lasts = NULL;
 
@@ -330,6 +331,7 @@ void put_log(uin_t uin, const char *format, ...)
 	}
 	va_end(ap);
 	
+#ifdef ENABLED_SQLITE3
 	//Logowanie do bazy SQL
 	if( config_log & 8 ) {
 		//snprintf(path, sizeof(path), "/%s", home_dir, lp + 1);
@@ -384,7 +386,7 @@ void put_log(uin_t uin, const char *format, ...)
 		}
 		return;
 	}
-
+#endif
 	/* zaalokuj bufor */
 	buf = xmalloc(size + 1);
 	*buf = 0;

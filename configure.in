@@ -154,11 +154,11 @@ dnl  execinfo
 AC_CHECK_HEADERS(execinfo.h)
 AC_CHECK_FUNCS(backtrace)
 
-dnl  sqlite
+dnl  sqlite3
 AC_CHECK_LIB(sqlite3, connect, IS_SQLITE="yes")
 if test "$IS_SQLITE" == "yes" ; then
     LIBS="$LIBS -lsqlite3"
-    AC_DEFINE(WITH_SQLITE3, 1, [define if You want sqlite3])
+    AC_DEFINE(ENABLED_SQLITE3, 1, [define if You want sqlite3])
 fi
 
 dnl  libgadu
