@@ -256,6 +256,7 @@ static char *log_escape(const char *str)
 	return res;
 }
 
+#ifdef ENABLED_SQLITE3
 static char *log_escape_sql(const char *str)
 {
 	const char *p;
@@ -305,6 +306,7 @@ static int sqlcallback(void *NotUsed, int argc, char **argv, char **azColName){
   }
   return 0;
 }
+#endif //ifdef ENABLED_SQLITE3
 
 /*
  * put_log()
@@ -377,8 +379,6 @@ void put_log(uin_t uin, const char *format, ...)
 #ifdef ENABLED_SQLITE3
 	//Logowanie do bazy SQL
 	if( config_log & 8 ) {
-		//snprintf(path, sizeof(path), "/%s", home_dir, lp + 1);
-		
 		char dbpath[80] ="";
 		sprintf(dbpath, "%s/%d.db", (char *) prepare_path("history", 0), uin);
 		sqlite3 *db;
@@ -401,7 +401,6 @@ void put_log(uin_t uin, const char *format, ...)
 					ip char(100) \
 				);", sqlcallback, 0, &zErrMsg);
 			
-			//Tutaj nie potrzeba sprawdzania, czy operacja siê uda³a. Je¶li siê nie uda³a, to najpewniej tabela ju¿ istnieje.
 			if( rc!=SQLITE_OK ){
 				gg_debug(GG_DEBUG_MISC, "SQL error(%s): %s\n", dbpath, zErrMsg);
 				sqlite3_free(zErrMsg);
@@ -428,7 +427,7 @@ void put_log(uin_t uin, const char *format, ...)
 				sprintf( query, "insert into msg( type, nick, time, msg ) values('%s','%s', %s, '%s');", argumenty[0], argumenty[1], argumenty[2], tmp);
 			} else if( argumenty[0] == "chatrecv" || argumenty[0] == "msgrecv" ) {
 				tmp = log_escape_sql(argumenty[4]);
-				sprintf( query, "insert into gadu( type, nick, time, send_time, msg ) values ('%s','%s', %s, %s, '%s');", argumenty[0], argumenty[1], argumenty[2], argumenty[3], tmp );
+				sprintf( query, "insert into msg( type, nick, time, send_time, msg ) values ('%s','%s', %s, %s, '%s');", argumenty[0], argumenty[1], argumenty[2], argumenty[3], tmp );
 			}
 			xfree(tmp);
 			
@@ -449,7 +448,8 @@ void put_log(uin_t uin, const char *format, ...)
 		}
 		return;
 	}
-#endif
+#endif //#ifdef ENABLED_SQLITE3
+
 	/* zaalokuj bufor */
 	buf = xmalloc(size + 1);
 	*buf = 0;
