@@ -52,6 +52,7 @@
 #endif
 #ifdef ENABLED_SQLITE3
 #	include <sqlite3.h>
+#	include <iconv.h>
 #endif
 
 list_t lasts = NULL;
@@ -255,6 +256,48 @@ static char *log_escape(const char *str)
 	return res;
 }
 
+static char *log_escape_sql(const char *str)
+{
+	const char *p;
+	char *res, *q;
+	int size, needto = 0;
+
+	if (!str)
+		return NULL;
+	
+	for (p = str; *p; p++) {
+		if (*p == '\'' )
+			needto = 1;
+	}
+
+	if (!needto)
+		return xstrdup(str);
+
+	for (p = str, size = 0; *p; p++) {
+		if (*p == '\'')
+			size += 2;
+		else
+			size++;
+	}
+
+	q = res = xmalloc(size + 3);
+	
+	*q++ = '"';
+	
+	for (p = str; *p; p++, q++) {
+		if (*p == '\'') {
+			*q++ = '\'';
+			*q = *p;
+		} else {
+			*q = *p;
+		}
+	}
+	*q++ = '"';
+	*q = 0;
+
+	return res;
+}
+
 static int sqlcallback(void *NotUsed, int argc, char **argv, char **azColName){
   int i;
   for(i=0; i<argc; i++){
@@ -358,26 +401,46 @@ void put_log(uin_t uin, const char *format, ...)
 					ip char(100) \
 				);", sqlcallback, 0, &zErrMsg);
 			
+			//Tutaj nie potrzeba sprawdzania, czy operacja siê uda³a. Je¶li siê nie uda³a, to najpewniej tabela ju¿ istnieje.
 			if( rc!=SQLITE_OK ){
 				gg_debug(GG_DEBUG_MISC, "SQL error(%s): %s\n", dbpath, zErrMsg);
 				sqlite3_free(zErrMsg);
 			}
-			//Tutaj nie potrzeba sprawdzania, czy operacja siê uda³a. Je¶li siê nie uda³a, to najpewniej tabela ju¿ istnieje.
-			char query[1000] = "";
 			
+			#define MAX_QUERY_SIZE 1000
+			char query[MAX_QUERY_SIZE] = "";
+			size_t query_size = sizeof(query);
+			char *query_ptr = query;
+			char utfquery[MAX_QUERY_SIZE];
+			size_t utfquery_size = sizeof(utfquery);
+			char *utfquery_ptr = utfquery;
+			iconv_t      cd;
+			
+			char * tmp = "";
 			if( argumenty[0] == "status") {
-				char * tmp = "";
 				if( argumenty[5] != NULL) {
 					tmp = argumenty[5];
 				}
-				sprintf( query, "insert into msg( type, nick, ip, time, status, descr ) values('%s', '%s', '%s', %s, '%s', '%s');", argumenty[0], argumenty[1], argumenty[2], argumenty[3], argumenty[4], log_escape(tmp) );
+				tmp = log_escape_sql(tmp);
+				sprintf( query, "insert into msg( type, nick, ip, time, status, descr ) values('%s', '%s', '%s', %s, '%s', '%s');", argumenty[0], argumenty[1], argumenty[2], argumenty[3], argumenty[4], log_escape_sql(tmp) );
 			} else if( argumenty[0] == "chatsend" || argumenty[0] == "msgsend" ) {
-				sprintf( query, "insert into msg( type, nick, time, msg ) values('%s','%s', %s, '%s');", argumenty[0], argumenty[1], argumenty[2], log_escape(argumenty[3]) );
+				tmp = log_escape_sql(argumenty[3]);
+				sprintf( query, "insert into msg( type, nick, time, msg ) values('%s','%s', %s, '%s');", argumenty[0], argumenty[1], argumenty[2], tmp);
 			} else if( argumenty[0] == "chatrecv" || argumenty[0] == "msgrecv" ) {
-				sprintf( query, "insert into gadu( type, nick, time, send_time, msg ) values ('%s','%s', %s, %s, '%s');", argumenty[0], argumenty[1], argumenty[2], argumenty[3], log_escape(argumenty[4]) );
+				tmp = log_escape_sql(argumenty[4]);
+				sprintf( query, "insert into gadu( type, nick, time, send_time, msg ) values ('%s','%s', %s, %s, '%s');", argumenty[0], argumenty[1], argumenty[2], argumenty[3], tmp );
 			}
-			sqlite3_exec(db, query, NULL, 0, &zErrMsg);
-			gg_debug(GG_DEBUG_MISC, "SQL:%s:!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n%s\n",argumenty[0], query);
+			xfree(tmp);
+			
+			//Konwersja zapytania na UTF-8
+			cd = iconv_open("UTF-8", "ISO-8859-2"); 
+			size_t iconv_size = iconv(cd, &query_ptr, &query_size, &utfquery_ptr, &utfquery_size);	
+			*utfquery_ptr = '\0';
+			
+			sqlite3_exec(db, utfquery, NULL, 0, &zErrMsg);
+			
+			iconv_close(cd);
+			gg_debug(GG_DEBUG_MISC, "SQL (%d)\n", __LINE__);
 			if( rc!=SQLITE_OK ){
 				gg_debug(GG_DEBUG_MISC, "SQL error(%s): %s\n", dbpath, zErrMsg);
 				sqlite3_free(zErrMsg);
