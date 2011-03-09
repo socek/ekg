@@ -439,7 +439,6 @@ void put_log(uin_t uin, const char *format, ...)
 			sqlite3_exec(db, utfquery, NULL, 0, &zErrMsg);
 			
 			iconv_close(cd);
-			gg_debug(GG_DEBUG_MISC, "SQL (%d)\n", __LINE__);
 			if( rc!=SQLITE_OK ){
 				gg_debug(GG_DEBUG_MISC, "SQL error(%s): %s\n", dbpath, zErrMsg);
 				sqlite3_free(zErrMsg);
