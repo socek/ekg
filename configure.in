@@ -156,8 +156,7 @@ AC_CHECK_FUNCS(backtrace)
 
 dnl  sqlite3
 AC_CHECK_LIB(sqlite3, connect, IS_SQLITE="yes")
-AC_CHECK_HEADERS(iconv.h, IS_ICONV="yes")
-if test "$IS_SQLITE" == "yes" -a "$IS_ICONV" == "yes" ; then
+if test "$IS_SQLITE" == "yes" ; then
     LIBS="$LIBS -lsqlite3"
     AC_DEFINE(ENABLED_SQLITE3, 1, [define if You want sqlite3])
 fi
@@ -538,7 +537,7 @@ else
 	echo " - aspell: disabled"
 fi
 
-if test "$IS_SQLITE" == "yes" -a "$IS_ICONV" == "yes" ; then
+if test "$IS_SQLITE" == "yes" ; then
     echo " - sqlite3: enabled"
 else 
     echo " - sqlite3: disabled"

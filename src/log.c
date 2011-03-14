@@ -52,7 +52,6 @@
 #endif
 #ifdef ENABLED_SQLITE3
 #	include <sqlite3.h>
-#	include <iconv.h>
 #endif
 
 list_t lasts = NULL;
@@ -407,13 +406,7 @@ void put_log(uin_t uin, const char *format, ...)
 			}
 			
 			#define MAX_QUERY_SIZE 1000
-			char query[MAX_QUERY_SIZE] = "";
-			size_t query_size = sizeof(query);
-			char *query_ptr = query;
-			char utfquery[MAX_QUERY_SIZE];
-			size_t utfquery_size = sizeof(utfquery);
-			char *utfquery_ptr = utfquery;
-			iconv_t      cd;
+			char *query = xmalloc( sizeof(char) * MAX_QUERY_SIZE );
 			
 			char * tmp = "";
 			if( argumenty[0] == "status") {
@@ -431,14 +424,10 @@ void put_log(uin_t uin, const char *format, ...)
 			}
 			xfree(tmp);
 			
-			//Konwersja zapytania na UTF-8
-			cd = iconv_open("UTF-8", "ISO-8859-2"); 
-			size_t iconv_size = iconv(cd, &query_ptr, &query_size, &utfquery_ptr, &utfquery_size);	
-			*utfquery_ptr = '\0';
+            query = iso_to_utf8(query);
+			sqlite3_exec(db, query, NULL, 0, &zErrMsg);
+            xfree(query);
 			
-			sqlite3_exec(db, utfquery, NULL, 0, &zErrMsg);
-			
-			iconv_close(cd);
 			if( rc!=SQLITE_OK ){
 				gg_debug(GG_DEBUG_MISC, "SQL error(%s): %s\n", dbpath, zErrMsg);
 				sqlite3_free(zErrMsg);
