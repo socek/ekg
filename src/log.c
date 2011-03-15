@@ -414,13 +414,13 @@ void put_log(uin_t uin, const char *format, ...)
 					tmp = argumenty[5];
 				}
 				tmp = log_escape_sql(tmp);
-				sprintf( query, "insert into msg( type, nick, ip, time, status, descr ) values('%s', '%s', '%s', %s, '%s', '%s');", argumenty[0], argumenty[1], argumenty[2], argumenty[3], argumenty[4], log_escape_sql(tmp) );
+				sprintf( query, "insert into msg( type, nick, ip, time, status, descr ) values('%s', '%s', '%s', datetime(%s, 'unixepoch'), '%s', '%s');", argumenty[0], argumenty[1], argumenty[2], argumenty[3], argumenty[4], log_escape_sql(tmp) );
 			} else if( argumenty[0] == "chatsend" || argumenty[0] == "msgsend" ) {
 				tmp = log_escape_sql(argumenty[3]);
-				sprintf( query, "insert into msg( type, nick, time, msg ) values('%s','%s', %s, '%s');", argumenty[0], argumenty[1], argumenty[2], tmp);
+				sprintf( query, "insert into msg( type, nick, time, msg ) values('%s','%s', datetime(%s, 'unixepoch'), '%s');", argumenty[0], argumenty[1], argumenty[2], tmp);
 			} else if( argumenty[0] == "chatrecv" || argumenty[0] == "msgrecv" ) {
 				tmp = log_escape_sql(argumenty[4]);
-				sprintf( query, "insert into msg( type, nick, time, send_time, msg ) values ('%s','%s', %s, %s, '%s');", argumenty[0], argumenty[1], argumenty[2], argumenty[3], tmp );
+				sprintf( query, "insert into msg( type, nick, time, send_time, msg ) values ('%s','%s', datetime(%s, 'unixepoch'), %s, '%s');", argumenty[0], argumenty[1], argumenty[2], argumenty[3], tmp );
 			}
 			xfree(tmp);
 			
